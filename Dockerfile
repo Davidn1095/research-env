@@ -223,7 +223,20 @@ RUN set -e && Rscript -e ' \
     cat("\n=== CRAN layer 3b done ===\n") \
     '
 
-# --- 3c: Shiny, Seurat, spatstat ---
+# --- 3c-pre: Seurat (own layer — base image ships old 5.0.x) ---
+RUN set -e && Rscript -e ' \
+    options(repos = c(CRAN = "https://cloud.r-project.org"), Ncpus = 4L, warn = 1); \
+    tryCatch(remove.packages("Seurat"), error = function(e) NULL); \
+    tryCatch(remove.packages("SeuratObject"), error = function(e) NULL); \
+    install.packages("SeuratObject"); \
+    install.packages("Seurat"); \
+    cat("SeuratObject", as.character(packageVersion("SeuratObject")), "\n"); \
+    cat("Seurat", as.character(packageVersion("Seurat")), "\n"); \
+    stopifnot(packageVersion("SeuratObject") >= "5.3.0"); \
+    stopifnot(packageVersion("Seurat") >= "5.4.0") \
+    '
+
+# --- 3c: Shiny, spatstat, Seurat extras ---
 RUN set -e && Rscript -e ' \
     options(repos = c(CRAN = "https://cloud.r-project.org"), Ncpus = 4L, warn = 1); \
     iv <- function(pkg, ver) { \
@@ -247,16 +260,7 @@ RUN set -e && Rscript -e ' \
     iv("DT",             "0.34.0"); \
     iv("visNetwork",     "2.1.4"); \
     \
-    ## Seurat / single-cell (CRAN portion) \
-    ## Base image ships old SeuratObject+Seurat — remove then reinstall \
-    tryCatch(remove.packages("Seurat"), error = function(e) NULL); \
-    tryCatch(remove.packages("SeuratObject"), error = function(e) NULL); \
-    remotes::install_version("SeuratObject", version = "5.3.0", \
-                             quiet = FALSE, dependencies = FALSE); \
-    remotes::install_version("Seurat", version = "5.4.0", \
-                             quiet = FALSE, dependencies = FALSE); \
-    stopifnot(packageVersion("SeuratObject") == "5.3.0"); \
-    stopifnot(packageVersion("Seurat") == "5.4.0"); \
+    ## Seurat extras \
     iv("sctransform",    "0.4.3"); \
     iv("harmony",        "1.2.4"); \
     iv("Rtsne",          "0.17"); \

@@ -1,0 +1,121 @@
+name: Build and Push Container
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Image tag (e.g. 2026.03, 2026.04, latest)'
+        required: true
+        default: '2026.03'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: davidn1095/research-env
+
+jobs:
+  build-test-push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      # ------------------------------------------------------------------
+      # 1. Checkout
+      # ------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ------------------------------------------------------------------
+      # 2. Set up Docker Buildx (for cache support)
+      # ------------------------------------------------------------------
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ------------------------------------------------------------------
+      # 3. Log in to GitHub Container Registry
+      # ------------------------------------------------------------------
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ------------------------------------------------------------------
+      # 4. Build image (load to local Docker, do NOT push yet)
+      # ------------------------------------------------------------------
+      - name: Build image (local)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ------------------------------------------------------------------
+      # 5. Smoke tests (run BEFORE push — if these fail, nothing is pushed)
+      # ------------------------------------------------------------------
+      - name: Smoke test — Python version
+        run: docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }} python3 --version
+
+      - name: Smoke test — R version
+        run: docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }} R --version | head -1
+
+      - name: Smoke test — Seurat loads
+        run: |
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }} \
+            Rscript -e "library(Seurat); cat('Seurat', as.character(packageVersion('Seurat')), 'OK\n')"
+
+      - name: Smoke test — LIANA loads
+        run: |
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }} \
+            Rscript -e "library(liana); cat('LIANA', as.character(packageVersion('liana')), 'OK\n')"
+
+      - name: Smoke test — DESeq2 loads
+        run: |
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }} \
+            Rscript -e "library(DESeq2); cat('DESeq2', as.character(packageVersion('DESeq2')), 'OK\n')"
+
+      - name: Smoke test — R package count
+        run: |
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }} \
+            Rscript -e "cat(length(installed.packages()[,1]), 'R packages installed\n')"
+
+      - name: Smoke test — Python package count
+        run: |
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }} \
+            sh -c "pip3 list --format=freeze 2>/dev/null | wc -l"
+
+      # ------------------------------------------------------------------
+      # 6. Push to GHCR (only if all tests passed)
+      # ------------------------------------------------------------------
+      - name: Push image to GHCR
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ------------------------------------------------------------------
+      # 7. Summary
+      # ------------------------------------------------------------------
+      - name: Print pull instructions
+        run: |
+          echo "============================================================"
+          echo "Image pushed successfully!"
+          echo ""
+          echo "Pull on Picasso:"
+          echo "  singularity pull docker://${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }}"
+          echo ""
+          echo "Or with Docker:"
+          echo "  docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }}"
+          echo "============================================================"

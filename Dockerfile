@@ -248,8 +248,11 @@ RUN set -e && Rscript -e ' \
     iv("visNetwork",     "2.1.4"); \
     \
     ## Seurat / single-cell (CRAN portion) \
-    iv("SeuratObject",   "5.3.0"); \
-    iv("Seurat",         "5.4.0"); \
+    ## SeuratObject must be upgraded BEFORE Seurat (base image ships 5.0.1) \
+    remotes::install_version("SeuratObject", version = "5.3.0", upgrade = "always", \
+                             quiet = TRUE, dependencies = TRUE); \
+    remotes::install_version("Seurat", version = "5.4.0", upgrade = "always", \
+                             quiet = TRUE, dependencies = TRUE); \
     iv("sctransform",    "0.4.3"); \
     iv("harmony",        "1.2.4"); \
     iv("Rtsne",          "0.17"); \

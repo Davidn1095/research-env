@@ -283,23 +283,6 @@ RUN set -e && Rscript -e ' \
     cat("\n=== CRAN layer 3c done ===\n") \
     '
 
-# --- 3c-post: Upgrade Seurat to 5.4.0 (base image ships 5.0.3) ---
-# All Seurat dependencies are now installed from layers 3a-3c.
-# Remove old versions, reinstall exact versions, verify.
-RUN set -e && Rscript -e ' \
-    options(repos = c(CRAN = "https://cloud.r-project.org"), Ncpus = 4L, warn = 1); \
-    tryCatch(remove.packages("Seurat"), error = function(e) NULL); \
-    tryCatch(remove.packages("SeuratObject"), error = function(e) NULL); \
-    remotes::install_version("SeuratObject", version = "5.3.0", \
-                             upgrade = "never", quiet = FALSE, dependencies = FALSE); \
-    remotes::install_version("Seurat", version = "5.4.0", \
-                             upgrade = "never", quiet = FALSE, dependencies = FALSE); \
-    cat("SeuratObject", as.character(packageVersion("SeuratObject")), "\n"); \
-    cat("Seurat", as.character(packageVersion("Seurat")), "\n"); \
-    stopifnot(packageVersion("SeuratObject") == "5.3.0"); \
-    stopifnot(packageVersion("Seurat") == "5.4.0") \
-    '
-
 # --- 3d: ML, statistics, network analysis ---
 RUN set -e && Rscript -e ' \
     options(repos = c(CRAN = "https://cloud.r-project.org"), Ncpus = 4L, warn = 1); \
@@ -665,6 +648,22 @@ RUN set -e && Rscript -e ' \
     ), ask = FALSE, update = FALSE); \
     \
     cat("\n=== Bioc layer 4c done ===\n") \
+    '
+
+# --- Upgrade Seurat 5.0.3 → 5.4.0 (base image ships old versions) ---
+# Must run AFTER all CRAN+Bioc layers so all dependencies are present.
+RUN set -e && Rscript -e ' \
+    options(repos = c(CRAN = "https://cloud.r-project.org"), Ncpus = 4L, warn = 1); \
+    tryCatch(remove.packages("Seurat"), error = function(e) NULL); \
+    tryCatch(remove.packages("SeuratObject"), error = function(e) NULL); \
+    remotes::install_version("SeuratObject", version = "5.3.0", \
+                             upgrade = "never", quiet = FALSE, dependencies = FALSE); \
+    remotes::install_version("Seurat", version = "5.4.0", \
+                             upgrade = "never", quiet = FALSE, dependencies = FALSE); \
+    cat("SeuratObject", as.character(packageVersion("SeuratObject")), "\n"); \
+    cat("Seurat", as.character(packageVersion("Seurat")), "\n"); \
+    stopifnot(packageVersion("SeuratObject") == "5.3.0"); \
+    stopifnot(packageVersion("Seurat") == "5.4.0") \
     '
 
 # ============================================================================

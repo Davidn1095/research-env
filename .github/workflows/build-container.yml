@@ -58,6 +58,7 @@ jobs:
           push: false
           load: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }}
+          build-args: GITHUB_PAT=${{ secrets.GITHUB_TOKEN }}
           no-cache: ${{ inputs.no_cache == 'true' }}
           cache-from: ${{ inputs.no_cache != 'true' && 'type=gha' || '' }}
           cache-to: type=gha,mode=max
@@ -112,6 +113,7 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          build-args: GITHUB_PAT=${{ secrets.GITHUB_TOKEN }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

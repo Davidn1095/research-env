@@ -669,6 +669,9 @@ RUN set -e && Rscript -e ' \
 # ============================================================================
 # LAYER 5: R GitHub packages (4 packages, each in own layer for caching)
 # ============================================================================
+# GITHUB_PAT avoids API rate limits (60/hr unauthenticated → 5000/hr)
+ARG GITHUB_PAT=""
+ENV GITHUB_PAT=${GITHUB_PAT}
 
 # --- 5a: CellChat v1.6.1 (pinned to master commit) ---
 RUN set -e && Rscript -e ' \
@@ -701,6 +704,9 @@ RUN set -e && Rscript -e ' \
                              upgrade = "never", quiet = TRUE); \
     cat("hdWGCNA", as.character(packageVersion("hdWGCNA")), "\n") \
     '
+
+# Clear GITHUB_PAT so it doesn't persist in the final image
+ENV GITHUB_PAT=""
 
 # ============================================================================
 # LAYER 6: Cleanup

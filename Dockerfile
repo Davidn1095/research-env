@@ -223,19 +223,6 @@ RUN set -e && Rscript -e ' \
     cat("\n=== CRAN layer 3b done ===\n") \
     '
 
-# --- 3c-pre: Seurat (own layer — base image ships old 5.0.x) ---
-RUN set -e && Rscript -e ' \
-    options(repos = c(CRAN = "https://cloud.r-project.org"), Ncpus = 4L, warn = 1); \
-    tryCatch(remove.packages("Seurat"), error = function(e) NULL); \
-    tryCatch(remove.packages("SeuratObject"), error = function(e) NULL); \
-    install.packages("SeuratObject"); \
-    install.packages("Seurat"); \
-    cat("SeuratObject", as.character(packageVersion("SeuratObject")), "\n"); \
-    cat("Seurat", as.character(packageVersion("Seurat")), "\n"); \
-    stopifnot(packageVersion("SeuratObject") >= "5.3.0"); \
-    stopifnot(packageVersion("Seurat") >= "5.4.0") \
-    '
-
 # --- 3c: Shiny, spatstat, Seurat extras ---
 RUN set -e && Rscript -e ' \
     options(repos = c(CRAN = "https://cloud.r-project.org"), Ncpus = 4L, warn = 1); \
@@ -294,6 +281,23 @@ RUN set -e && Rscript -e ' \
     iv("spatstat.explore",  "3.7-0"); \
     \
     cat("\n=== CRAN layer 3c done ===\n") \
+    '
+
+# --- 3c-post: Upgrade Seurat to 5.4.0 (base image ships 5.0.3) ---
+# All Seurat dependencies are now installed from layers 3a-3c.
+# Remove old versions, reinstall exact versions, verify.
+RUN set -e && Rscript -e ' \
+    options(repos = c(CRAN = "https://cloud.r-project.org"), Ncpus = 4L, warn = 1); \
+    remove.packages("Seurat"); \
+    remove.packages("SeuratObject"); \
+    remotes::install_version("SeuratObject", version = "5.3.0", \
+                             upgrade = "never", quiet = FALSE, dependencies = FALSE); \
+    remotes::install_version("Seurat", version = "5.4.0", \
+                             upgrade = "never", quiet = FALSE, dependencies = FALSE); \
+    cat("SeuratObject", as.character(packageVersion("SeuratObject")), "\n"); \
+    cat("Seurat", as.character(packageVersion("Seurat")), "\n"); \
+    stopifnot(packageVersion("SeuratObject") == "5.3.0"); \
+    stopifnot(packageVersion("Seurat") == "5.4.0") \
     '
 
 # --- 3d: ML, statistics, network analysis ---

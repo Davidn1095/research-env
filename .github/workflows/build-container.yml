@@ -7,6 +7,10 @@ on:
         description: 'Image tag (e.g. 2026.03, 2026.04, latest)'
         required: true
         default: '2026.03'
+      no_cache:
+        description: 'Build without cache (true/false)'
+        required: false
+        default: 'false'
 
 env:
   REGISTRY: ghcr.io
@@ -54,7 +58,8 @@ jobs:
           push: false
           load: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }}
-          cache-from: type=gha
+          no-cache: ${{ inputs.no_cache == 'true' }}
+          cache-from: ${{ inputs.no_cache == 'true' && '' || 'type=gha' }}
           cache-to: type=gha,mode=max
 
       # ------------------------------------------------------------------
@@ -70,6 +75,11 @@ jobs:
         run: |
           docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }} \
             Rscript -e "library(Seurat); cat('Seurat', as.character(packageVersion('Seurat')), 'OK\n')"
+
+      - name: Smoke test — Seurat version check
+        run: |
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }} \
+            Rscript -e "stopifnot(packageVersion('Seurat') >= '5.4.0'); stopifnot(packageVersion('SeuratObject') >= '5.3.0'); cat('Seurat 5.4.0+ and SeuratObject 5.3.0+ OK\n')"
 
       - name: Smoke test — LIANA loads
         run: |

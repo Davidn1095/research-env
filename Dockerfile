@@ -653,24 +653,39 @@ RUN set -e && Rscript -e ' \
     '
 
 # ============================================================================
-# LAYER 5: R GitHub packages (4 packages)
+# LAYER 5: R GitHub packages (4 packages, each in own layer for caching)
 # ============================================================================
+
+# --- 5a: CellChat v1.6.1 (pinned to master commit) ---
 RUN set -e && Rscript -e ' \
     options(Ncpus = 4L, warn = 1); \
-    \
-    devtools::install_github("sqjin/CellChat@v1.6.1", \
+    devtools::install_github("sqjin/CellChat@e4f68625b074247d619c2e488d33970cc531e17c", \
                              upgrade = "never", quiet = TRUE); \
-    \
-    devtools::install_github("mojaveazure/seurat-disk@0.0.0.9021", \
+    cat("CellChat", as.character(packageVersion("CellChat")), "\n") \
+    '
+
+# --- 5b: SeuratDisk v0.0.0.9021 (pinned to master commit, no tags exist) ---
+RUN set -e && Rscript -e ' \
+    options(Ncpus = 4L, warn = 1); \
+    devtools::install_github("mojaveazure/seurat-disk@877d4e18ab38c686f5db54f8cd290274ccdbe295", \
                              upgrade = "never", quiet = TRUE); \
-    \
-    devtools::install_github("saezlab/liana@0.1.14", \
+    cat("SeuratDisk", as.character(packageVersion("SeuratDisk")), "\n") \
+    '
+
+# --- 5c: LIANA v0.1.14 (pinned to master commit, tag 0.1.14 does not exist) ---
+RUN set -e && Rscript -e ' \
+    options(Ncpus = 4L, warn = 1); \
+    devtools::install_github("saezlab/liana@6cab46c54234f861ea176c3de77c4b8aa45ecb3d", \
                              upgrade = "never", quiet = TRUE); \
-    \
+    cat("liana", as.character(packageVersion("liana")), "\n") \
+    '
+
+# --- 5d: hdWGCNA v0.4.09 (tag exists) ---
+RUN set -e && Rscript -e ' \
+    options(Ncpus = 4L, warn = 1); \
     devtools::install_github("smorabit/hdWGCNA@v0.4.09", \
                              upgrade = "never", quiet = TRUE); \
-    \
-    cat("\n=== GitHub packages done ===\n") \
+    cat("hdWGCNA", as.character(packageVersion("hdWGCNA")), "\n") \
     '
 
 # ============================================================================

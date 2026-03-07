@@ -651,15 +651,15 @@ RUN set -e && Rscript -e ' \
     '
 
 # --- Upgrade Seurat 5.0.3 → 5.4.0 (base image ships old versions) ---
-# Must run AFTER all CRAN+Bioc layers so all dependencies are present.
+# Uses dependencies=TRUE to pull any missing deps (cache may omit some).
 RUN set -e && Rscript -e ' \
     options(repos = c(CRAN = "https://cloud.r-project.org"), Ncpus = 4L, warn = 1); \
     tryCatch(remove.packages("Seurat"), error = function(e) NULL); \
     tryCatch(remove.packages("SeuratObject"), error = function(e) NULL); \
     remotes::install_version("SeuratObject", version = "5.3.0", \
-                             upgrade = "never", quiet = FALSE, dependencies = FALSE); \
+                             upgrade = "never", quiet = FALSE, dependencies = TRUE); \
     remotes::install_version("Seurat", version = "5.4.0", \
-                             upgrade = "never", quiet = FALSE, dependencies = FALSE); \
+                             upgrade = "never", quiet = FALSE, dependencies = TRUE); \
     cat("SeuratObject", as.character(packageVersion("SeuratObject")), "\n"); \
     cat("Seurat", as.character(packageVersion("Seurat")), "\n"); \
     stopifnot(packageVersion("SeuratObject") == "5.3.0"); \

@@ -59,7 +59,7 @@ jobs:
           load: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }}
           no-cache: ${{ inputs.no_cache == 'true' }}
-          cache-from: ${{ inputs.no_cache == 'true' && '' || 'type=gha' }}
+          cache-from: ${{ inputs.no_cache != 'true' && 'type=gha' || '' }}
           cache-to: type=gha,mode=max
 
       # ------------------------------------------------------------------

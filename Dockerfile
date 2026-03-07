@@ -712,10 +712,10 @@ ENV GITHUB_PAT=""
 # LAYER 6: Bake Basilisk/zellkonverter conda env into the container
 # ============================================================================
 # This eliminates ~31k files from the external BASILISK_EXTERNAL_DIR on fscratch.
-# At runtime, set BASILISK_USE_SYSTEM_DIR=1 so basilisk uses this baked-in env.
-ENV BASILISK_USE_SYSTEM_DIR=1
+# BASILISK_USE_SYSTEM_DIR must be UNSET during build (so installConda works),
+# then set for runtime so basilisk uses the baked-in env.
 
-RUN set -e && Rscript -e ' \
+RUN set -e && BASILISK_USE_SYSTEM_DIR=0 Rscript -e ' \
     library(basilisk); \
     library(basilisk.utils); \
     \
@@ -744,6 +744,9 @@ RUN set -e && Rscript -e ' \
     stopifnot(file.exists(py)); \
     cat("Basilisk zellkonverter env baked in at:", envpath, "\n") \
     '
+
+# Set for runtime so basilisk uses the baked-in env
+ENV BASILISK_USE_SYSTEM_DIR=1
 
 # ============================================================================
 # LAYER 7: Cleanup

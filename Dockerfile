@@ -288,8 +288,8 @@ RUN set -e && Rscript -e ' \
 # Remove old versions, reinstall exact versions, verify.
 RUN set -e && Rscript -e ' \
     options(repos = c(CRAN = "https://cloud.r-project.org"), Ncpus = 4L, warn = 1); \
-    remove.packages("Seurat"); \
-    remove.packages("SeuratObject"); \
+    tryCatch(remove.packages("Seurat"), error = function(e) NULL); \
+    tryCatch(remove.packages("SeuratObject"), error = function(e) NULL); \
     remotes::install_version("SeuratObject", version = "5.3.0", \
                              upgrade = "never", quiet = FALSE, dependencies = FALSE); \
     remotes::install_version("Seurat", version = "5.4.0", \

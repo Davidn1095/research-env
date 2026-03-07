@@ -92,6 +92,11 @@ jobs:
           docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }} \
             Rscript -e "library(DESeq2); cat('DESeq2', as.character(packageVersion('DESeq2')), 'OK\n')"
 
+      - name: Smoke test — zellkonverter + baked basilisk env
+        run: |
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }} \
+            Rscript -e "library(zellkonverter); envdir <- file.path(find.package('zellkonverter'), 'basilisk', 'zellkonverterAnnDataEnv-0.10.2'); stopifnot(dir.exists(envdir)); cat('zellkonverter', as.character(packageVersion('zellkonverter')), '+ baked basilisk env OK\n')"
+
       - name: Smoke test — R package count
         run: |
           docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }} \

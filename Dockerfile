@@ -709,7 +709,44 @@ RUN set -e && Rscript -e ' \
 ENV GITHUB_PAT=""
 
 # ============================================================================
-# LAYER 6: Cleanup
+# LAYER 6: Bake Basilisk/zellkonverter conda env into the container
+# ============================================================================
+# This eliminates ~31k files from the external BASILISK_EXTERNAL_DIR on fscratch.
+# At runtime, set BASILISK_USE_SYSTEM_DIR=1 so basilisk uses this baked-in env.
+ENV BASILISK_USE_SYSTEM_DIR=1
+
+RUN set -e && Rscript -e ' \
+    library(basilisk); \
+    library(basilisk.utils); \
+    \
+    ## 1. Install base conda (needed by setupBasiliskEnv) \
+    installConda(); \
+    \
+    ## 2. Create the zellkonverter env inside the package directory \
+    envpath <- file.path( \
+        find.package("zellkonverter"), "basilisk", \
+        "zellkonverterAnnDataEnv-0.10.2" \
+    ); \
+    dir.create(dirname(envpath), recursive = TRUE, showWarnings = FALSE); \
+    setupBasiliskEnv( \
+        envpath  = envpath, \
+        packages = c( \
+            "anndata==0.10.2", "h5py==3.10.0", "hdf5==1.14.2", \
+            "natsort==8.4.0", "numpy==1.26.0", "packaging==23.2", \
+            "pandas==2.1.1", "python==3.11.5", "scipy==1.11.3" \
+        ), \
+        channels = "conda-forge" \
+    ); \
+    \
+    ## 3. Verify the env was created \
+    stopifnot(dir.exists(envpath)); \
+    py <- file.path(envpath, "bin", "python3"); \
+    stopifnot(file.exists(py)); \
+    cat("Basilisk zellkonverter env baked in at:", envpath, "\n") \
+    '
+
+# ============================================================================
+# LAYER 7: Cleanup
 # ============================================================================
 RUN rm -rf /tmp/* /var/tmp/* && \
     apt-get clean && \

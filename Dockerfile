@@ -248,11 +248,15 @@ RUN set -e && Rscript -e ' \
     iv("visNetwork",     "2.1.4"); \
     \
     ## Seurat / single-cell (CRAN portion) \
-    ## SeuratObject must be upgraded BEFORE Seurat (base image ships 5.0.1) \
-    remotes::install_version("SeuratObject", version = "5.3.0", upgrade = "always", \
-                             quiet = TRUE, dependencies = TRUE); \
-    remotes::install_version("Seurat", version = "5.4.0", upgrade = "always", \
-                             quiet = TRUE, dependencies = TRUE); \
+    ## Base image ships old SeuratObject+Seurat — remove then reinstall \
+    tryCatch(remove.packages("Seurat"), error = function(e) NULL); \
+    tryCatch(remove.packages("SeuratObject"), error = function(e) NULL); \
+    remotes::install_version("SeuratObject", version = "5.3.0", \
+                             quiet = FALSE, dependencies = FALSE); \
+    remotes::install_version("Seurat", version = "5.4.0", \
+                             quiet = FALSE, dependencies = FALSE); \
+    stopifnot(packageVersion("SeuratObject") == "5.3.0"); \
+    stopifnot(packageVersion("Seurat") == "5.4.0"); \
     iv("sctransform",    "0.4.3"); \
     iv("harmony",        "1.2.4"); \
     iv("Rtsne",          "0.17"); \

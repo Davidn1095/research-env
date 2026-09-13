@@ -1,0 +1,17 @@
+# Dockerfile.splatter - research-env 2026.03 plus splatter.
+#
+# Built FROM the published 2026.03 image rather than from the full recipe, so every package
+# already in the container stays byte-identical to the image earlier analyses ran in; only
+# splatter and VariantAnnotation (with their Bioconductor dependencies) are added. The full
+# Dockerfile carries the same layer, so a from-scratch build includes it too.
+#
+# Build: Actions -> Build and Push Container, tag 2026.09, dockerfile Dockerfile.splatter.
+FROM ghcr.io/davidn1095/research-env:2026.03
+
+RUN set -e && Rscript -e ' \
+    options(Ncpus = 4L, warn = 1); \
+    BiocManager::install(c("VariantAnnotation", "splatter"), ask = FALSE, update = FALSE); \
+    stopifnot(packageVersion("splatter") == "1.26.0"); \
+    library(splatter); library(VariantAnnotation); \
+    cat("\n=== splatter layer done ===\n") \
+    '

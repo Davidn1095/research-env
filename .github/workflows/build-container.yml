@@ -11,6 +11,10 @@ on:
         description: 'Build without cache (true/false)'
         required: false
         default: 'false'
+      dockerfile:
+        description: 'Dockerfile to build (Dockerfile = full recipe; Dockerfile.splatter = 2026.03 plus splatter)'
+        required: false
+        default: 'Dockerfile'
 
 env:
   REGISTRY: ghcr.io
@@ -55,6 +59,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: ${{ inputs.dockerfile }}
           push: false
           load: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }}
@@ -97,6 +102,11 @@ jobs:
           docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }} \
             Rscript -e "library(zellkonverter); envdir <- file.path(find.package('zellkonverter'), 'basilisk', 'zellkonverterAnnDataEnv-0.10.2'); stopifnot(dir.exists(envdir)); cat('zellkonverter', as.character(packageVersion('zellkonverter')), '+ baked basilisk env OK\n')"
 
+      - name: Smoke test — splatter + VariantAnnotation load
+        run: |
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }} \
+            Rscript -e "library(splatter); library(VariantAnnotation); cat('splatter', as.character(packageVersion('splatter')), 'VariantAnnotation', as.character(packageVersion('VariantAnnotation')), 'OK\n')"
+
       - name: Smoke test — R package count
         run: |
           docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }} \
@@ -114,6 +124,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: ${{ inputs.dockerfile }}
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }}

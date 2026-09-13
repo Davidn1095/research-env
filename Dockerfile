@@ -749,6 +749,19 @@ RUN set -e && BASILISK_USE_SYSTEM_DIR=0 Rscript -e ' \
 ENV BASILISK_USE_SYSTEM_DIR=1
 
 # ============================================================================
+# LAYER 6b: simulation (splatter). splatPop generates the cell-level counts for the
+# sc-meta-analysis benchmark and needs VariantAnnotation at call time, which splatter
+# only suggests. Bioconductor 3.18: splatter 1.26.0, VariantAnnotation 1.48.1.
+# ============================================================================
+RUN set -e && Rscript -e ' \
+    options(Ncpus = 4L, warn = 1); \
+    BiocManager::install(c("VariantAnnotation", "splatter"), ask = FALSE, update = FALSE); \
+    stopifnot(packageVersion("splatter") == "1.26.0"); \
+    library(splatter); library(VariantAnnotation); \
+    cat("\n=== splatter layer done ===\n") \
+    '
+
+# ============================================================================
 # LAYER 7: Cleanup
 # ============================================================================
 RUN rm -rf /tmp/* /var/tmp/* && \

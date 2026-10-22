@@ -1,0 +1,69 @@
+# Atlas analysis container (autoimmune-atlas, Genes & Immunity revision).
+# R 4.6.1 + Bioconductor 3.23 + Python 3.12; everything in the image, no R_overflow / py_overflow.
+# Built by .github/workflows/build-atlas.yml; tag atlas-2026.10.
+FROM bioconductor/bioconductor_docker:RELEASE_3_23-R-4.6.1
+
+LABEL maintainer="David Nunez"
+LABEL description="autoimmune-atlas analysis environment: R 4.6.1, Bioconductor 3.23, Python 3.12"
+LABEL org.opencontainers.image.source="https://github.com/Davidn1095/research-env"
+
+# R_LIBS_USER and PYTHONNOUSERSITE keep host-side overflow libraries out of the search path.
+ENV LC_ALL=C.UTF-8 \
+    LANG=C.UTF-8 \
+    DEBIAN_FRONTEND=noninteractive \
+    R_LIBS_USER=/opt/r-user-lib-unused \
+    PYTHONNOUSERSITE=1 \
+    VIRTUAL_ENV=/opt/venv \
+    RETICULATE_PYTHON=/opt/venv/bin/python
+ENV PATH="/opt/venv/bin:${PATH}"
+
+# ----------------------------------------------------------------------------
+# System libraries (compile-time needs of Seurat/hdf5r/magick/igraph and Python builds)
+# ----------------------------------------------------------------------------
+RUN set -e && apt-get update && apt-get install -y --no-install-recommends \
+        python3 python3-venv python3-dev \
+        libhdf5-dev libmagick++-dev libglpk-dev libgsl-dev libfftw3-dev \
+        libgmp-dev libmpfr-dev libbz2-dev cmake \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# ----------------------------------------------------------------------------
+# Python 3.12 virtual environment
+# ----------------------------------------------------------------------------
+RUN set -e && python3 -m venv /opt/venv && \
+    pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir torch==2.14.1 && \
+    pip install --no-cache-dir \
+        "scvi-tools==1.5.1" "scanpy==1.12.4" "anndata==0.13.4" "mudata==0.4.1" \
+        "pertpy[tcoda]==1.4.0" patsy "scib-metrics==0.6.1" numpyro \
+        "decoupler==2.2.0" "pydeseq2==0.5.4" \
+        numpy scipy pandas h5py openpyxl scikit-learn igraph leidenalg && \
+    python -c "import sys; assert sys.version_info[:2] == (3, 12), sys.version"
+
+# ----------------------------------------------------------------------------
+# R: CRAN and Bioconductor 3.23 (binary repositories configured by the base image)
+# ----------------------------------------------------------------------------
+RUN set -e && Rscript -e ' \
+    options(Ncpus = 4L, warn = 1); \
+    stopifnot(as.character(BiocManager::version()) == "3.23"); \
+    cran <- c("Seurat", "SeuratObject", "Matrix", "hdf5r", "reticulate", "pROC", "future", \
+              "glmnet", "ranger", "xgboost", "openxlsx2", "msigdbr", \
+              "ggplot2", "cowplot", "patchwork", "ggrepel", "ggrastr", "circlize", "magick", \
+              "png", "scales", "gtable", "dplyr", "tidyr", "readr", "tibble"); \
+    bioc <- c("SingleR", "celldex", "scDblFinder", "decontX", "DESeq2", "fgsea", "limma", \
+              "clusterProfiler", "org.Hs.eg.db", "AnnotationDbi", "SingleCellExperiment", \
+              "SummarizedExperiment", "S4Vectors", "BiocParallel", "ExperimentHub", \
+              "AnnotationHub", "ComplexHeatmap"); \
+    BiocManager::install(c(cran, bioc), ask = FALSE, update = FALSE); \
+    install.packages("ggchicklet", repos = c("https://hrbrmstr.r-universe.dev", getOption("repos"))); \
+    missing <- setdiff(c(cran, bioc, "ggchicklet"), rownames(installed.packages())); \
+    if (length(missing)) stop("Not installed: ", paste(missing, collapse = ", ")) \
+    '
+
+# ----------------------------------------------------------------------------
+# Load tests (also run on Picasso after pulling)
+# ----------------------------------------------------------------------------
+COPY tests/atlas_load_test.R tests/atlas_load_test.py /opt/atlas-tests/
+
+RUN rm -rf /tmp/* /var/tmp/* && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+CMD ["Rscript"]

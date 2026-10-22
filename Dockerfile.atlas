@@ -54,7 +54,8 @@ RUN set -e && Rscript -e ' \
               "SummarizedExperiment", "S4Vectors", "BiocParallel", "ExperimentHub", \
               "AnnotationHub", "ComplexHeatmap"); \
     BiocManager::install(c(cran, bioc), ask = FALSE, update = FALSE); \
-    install.packages("ggchicklet", repos = c("https://hrbrmstr.r-universe.dev", getOption("repos"))); \
+    if (!requireNamespace("remotes", quietly = TRUE)) install.packages("remotes"); \
+    remotes::install_github("hrbrmstr/ggchicklet@64c468dd0900153be1690dbfc5cfb35710da8183", upgrade = "never"); \
     missing <- setdiff(c(cran, bioc, "ggchicklet"), rownames(installed.packages())); \
     if (length(missing)) stop("Not installed: ", paste(missing, collapse = ", ")) \
     '

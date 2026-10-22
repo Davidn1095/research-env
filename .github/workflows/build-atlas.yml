@@ -7,6 +7,7 @@ on:
     branches: [main]
     paths:
       - Dockerfile.atlas
+      - Dockerfile.atlas.dockerignore
       - tests/atlas_load_test.R
       - tests/atlas_load_test.py
       - .github/workflows/build-atlas.yml
@@ -43,6 +44,8 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build image
+        env:
+          DOCKER_BUILDKIT: "1"
         run: docker build -f Dockerfile.atlas -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }} .
 
       - name: Load test (R)

@@ -1,0 +1,4 @@
+*
+!Dockerfile.atlas
+!tests/atlas_load_test.R
+!tests/atlas_load_test.py

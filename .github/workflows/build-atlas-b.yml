@@ -47,12 +47,10 @@ jobs:
           DOCKER_BUILDKIT: "1"
         run: docker build -f Dockerfile.atlas-b -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }} .
 
-      - name: Load test (R)
-
-      - name: Load test (Python)
+      - name: Load test (celltypist, base unchanged)
         run: docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }} python /opt/atlas-tests/atlas_b_load_test.py
 
-      - name: Push image (only after both tests pass)
+      - name: Push image (only after the load test passes)
         run: docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
 
       - name: Image size

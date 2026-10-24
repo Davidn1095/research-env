@@ -1,0 +1,3 @@
+*
+!Dockerfile.atlas-c
+!tests/atlas_c_load_test.py

@@ -1,0 +1,12 @@
+# Atlas analysis container, revision b: atlas-2026.10 (pinned by digest) plus CellTypist
+# (autoimmune-atlas decision 8b). Nothing else changes: CellTypist is installed with the
+# image's own pip freeze as constraints, so no existing package moves.
+# Built by .github/workflows/build-atlas-b.yml; tag atlas-2026.10b.
+FROM ghcr.io/davidn1095/research-env:atlas-2026.10@sha256:2215010aa289c41e6c6918a899ab9b03e65707ca2c5211f076f5a397cac99064
+
+RUN set -e && pip freeze > /opt/atlas-2026.10.freeze.txt && \
+    pip install --no-cache-dir -c /opt/atlas-2026.10.freeze.txt "celltypist==1.7.1" "click==8.5.0" && \
+    pip freeze > /opt/atlas-2026.10b.freeze.txt && \
+    if diff /opt/atlas-2026.10.freeze.txt /opt/atlas-2026.10b.freeze.txt | grep '^<'; then exit 1; fi
+
+COPY tests/atlas_b_load_test.py /opt/atlas-tests/

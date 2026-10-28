@@ -1,7 +1,7 @@
 name: Build atlas container, final (atlas-final-2026.10)
 
 # Builds Dockerfile.atlas-final from scratch (every version pinned; see the Dockerfile header), runs its load test,
-# which proves equality with atlas-2026.10c plus cellsnp-lite and vireoSNP, and pushes ONLY the atlas-final tag
+# which checks the versions of atlas-2026.10c plus cellsnp-lite and vireoSNP, and pushes ONLY the atlas-final tag
 # (never :latest, which belongs to the general research-env image). Started by hand only.
 on:
   workflow_dispatch:

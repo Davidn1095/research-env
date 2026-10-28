@@ -8,8 +8,8 @@
 #                       dependency resolution; vireoSNP constrained to that freeze
 #   cellsnp-lite        the conda build of ~/envs/genotype with its 24 dependencies, by URL and MD5
 #                       (locks/cellsnp.conda-explicit.txt), in its own prefix /opt/cellsnp
-# Locks were exported from atlas-2026.10c on 2026-10-28. tests/atlas_final_load_test.py proves equality (pip freeze,
-# package RECORD hashes, R installed.packages, dpkg, /opt) before the image is pushed.
+# Locks were exported from atlas-2026.10c on 2026-10-28. tests/atlas_final_load_test.py checks the versions (pip freeze,
+# R installed.packages, dpkg, /opt) before the image is pushed.
 # Built by .github/workflows/build-atlas-final.yml.
 
 # ---------------------------------------------------------------------------- cellsnp-lite (own conda prefix)

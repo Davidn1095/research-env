@@ -2,7 +2,7 @@
 and vireoSNP 0.5.9, against the locks exported from atlas-2026.10c (/opt/atlas-locks), then runs the earlier load
 tests and a genotype smoke test. Exits 1 on any failure.
   1. pip freeze: equal to the lock plus vireoSNP==0.5.9, nothing else added, removed or changed
-  2. package RECORD hashes (every installed file of every Python package): equal, except vireoSNP
+  2. package RECORD hashes (every installed file of every Python package; the REQUESTED marker left out): equal, except vireoSNP
   3. R installed.packages (Package, Version, LibPath, Priority, Repository, RemoteSha): equal
   4. dpkg packages and versions: equal
   5. /opt entries: equal plus atlas-locks and cellsnp
@@ -47,8 +47,14 @@ rec_lock = {}
 for line in open(f"{L}/atlas-2026.10c.pip-record.tsv").read().splitlines()[1:]:
     n, v, h = line.split("\t")
     rec_lock[(n, v)] = h
-rec_now = {(d.metadata["Name"].lower().replace("_", "-"), d.version): hashlib.sha256((d.read_text("RECORD") or "").encode()).hexdigest()
-           for d in md.distributions()}
+def record_hash(d):
+    # pip's "installed on request" marker is left out (the lock install requests every package, 10c requested 31);
+    # every other RECORD line, i.e. each installed file and its hash, is compared
+    lines = [l for l in (d.read_text("RECORD") or "").splitlines() if not l.split(",", 1)[0].endswith(".dist-info/REQUESTED")]
+    return hashlib.sha256(("\n".join(lines) + "\n").encode()).hexdigest()
+
+
+rec_now = {(d.metadata["Name"].lower().replace("_", "-"), d.version): record_hash(d) for d in md.distributions()}
 diff = sorted(k for k in set(rec_lock) | set(rec_now) if rec_lock.get(k) != rec_now.get(k))
 check("package RECORD hashes = 10c + vireoSNP", diff == [("vireosnp", "0.5.9")], f"differ: {diff[:10]}")
 
